@@ -1,14 +1,17 @@
 package com.shahs.transactions.model;
 
+import com.shahs.transactions.util.MiscUtils;
 import org.hibernate.annotations.Columns;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Table(name="trade")
+@SequenceGenerator(name="seq", initialValue=9, allocationSize=10)
 public class Trade {
     private long id;
-    private String date;
+    private Date date;
     private String action;
     private String ticker;
     private int quantity;
@@ -22,7 +25,7 @@ public class Trade {
 
     public Trade() {}
 
-    public Trade(String date, String action, String ticker, int qty, double price, double amount, double fees) {
+    public Trade(Date date, String action, String ticker, int qty, double price, double amount, double fees) {
         this.date = date;
         this.action = action;
         this.ticker = ticker;
@@ -33,7 +36,7 @@ public class Trade {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="seq")
     public long getId() {
             return id;
     }
@@ -42,10 +45,10 @@ public class Trade {
     }
 
     @Column(name="date", nullable = false)
-    public String getDate() {
+    public Date getDate() {
         return this.date;
     }
-    public void setDate(String date) {
+    public void setDate(Date date) {
         this.date = date;
     }
 
@@ -103,6 +106,50 @@ public class Trade {
         this.amount = amount;
     }
 
+    @Override
+    public String toString() {
+
+        String t = " Id:"+ this.getId() +
+                " Date: " + this.getDate() +
+                " Action: " + this.getAction() +
+                " ticker: " + this.getTicker() +
+                " quantity: " + this.getQuantity() +
+                " price: " + this.getPrice() +
+                " fees: " + this.getFees() +
+                " amount: " + this.getAmount();
+
+        return t;
+    }
+
+    public static Trade createTradeObj(String[] csvFile) {
+
+        Trade newTrade = new Trade();
+
+        Date cDate = MiscUtils.stringToDate(csvFile[0],"MM/dd/yyyy");
+        newTrade.setDate(cDate);
+        newTrade.setAction(csvFile[1]);
+        newTrade.setTicker(csvFile[2]);
+        newTrade.setQuantity(Integer.parseInt(csvFile[4]));
+        newTrade.setPrice(Double.parseDouble(csvFile[5]));
+        newTrade.setFees(Double.parseDouble(csvFile[6].equals( "" ) ? "0.0": csvFile[6]));
+        newTrade.setAmount(Double.parseDouble(csvFile[7]));
+//            System.out.println("newtrade: "+newTrade);
+        return newTrade;
+
+    }
+    public Trade[] sortTrades(Trade trade) {
+
+        return null;
+    }
+
+    public void addSameLotTrade(Trade current) {
+        this.quantity += current.getQuantity();
+        this.amount += current.getAmount();
+        this.fees += current.getFees();
+        if (this.quantity != 0) {
+            this.price = Math.abs(this.amount) / Math.abs(this.quantity);
+        }
+    }
 
 }
 
