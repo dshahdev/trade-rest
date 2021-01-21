@@ -38,14 +38,6 @@ public class FileController {
 
         documneStorageService.storeFile(file,fileName);
 
-        try {
-            helloMessageService.printCsvFile(TransactionsApplication.UPLOAD_DIR, fileName);
-        } catch (IOException ex) {
-            System.out.println("IO Exception while trying to load data from csv file");
-            Map<String, Boolean> response = new HashMap<>();
-            response.put("fileName", Boolean.FALSE);
-            return response;
-        }
 
 //        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
 //                .path("/downloadFile/")
@@ -53,7 +45,23 @@ public class FileController {
 //                .toUriString();
 
         Map<String, Boolean> response = new HashMap<>();
-        response.put("fileName", Boolean.TRUE);
+        response.put("result", Boolean.TRUE);
+
+        return response;
+    }
+
+    @PostMapping("/processCSVFile")
+    public Map<String, Boolean>  processFile(@Valid @RequestBody String file) {
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("result", Boolean.FALSE);
+
+        try {
+            helloMessageService.printCsvFile(TransactionsApplication.UPLOAD_DIR, file);
+            response.put("result", Boolean.TRUE);
+        } catch (IOException ex) {
+            System.out.println("IO Exception while trying to load data from csv file");
+        }
 
         return response;
     }
