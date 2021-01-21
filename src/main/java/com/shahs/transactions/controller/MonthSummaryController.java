@@ -17,6 +17,7 @@ import java.util.List;
 @RestController
 @CrossOrigin(origins ={"http://127.0.0.1:4200",
                         "http://192.168.1.103:4200",
+                        "http://192.168.1.103:8080",
                         "http://169.254.10.157:4200",
                         "http://localhost:4200"})
 
