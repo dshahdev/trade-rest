@@ -12,10 +12,7 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -92,6 +89,7 @@ public class HelloMessageService {
 
         return consumption;
     }
+
     public void printCsvFile(String inputPath, String csvFile) throws IOException{
         Date runDate = MiscUtils.stringToDate(csvFile.substring(10,18), DATE_FORMAT_YMD_NO_SLASH);
         String dashDate = csvFile.substring(10,14) +  "-" + csvFile.substring(14,16) + "-" + csvFile.substring(16,18);
@@ -118,12 +116,51 @@ public class HelloMessageService {
         SaveParameters();
 
     }
+
+    public List<Alloc> consumeSell(String ticker, Trade t, HashMap<String, List<Consumption>> consumptionHashMap) {
+
+        List<Alloc> allocList = new ArrayList<Alloc>();
+
+        if (!consumptionHashMap.containsKey(ticker)) {
+            System.out.println("No buy trades available to consume trade for ticker " + ticker + " trade: " + t.toString());
+            return allocList;
+        }
+
+        List<Consumption> consumptionList = consumptionHashMap.get(ticker);
+        Collections.sort(consumptionList);
+
+        int toAlloc = t.getQuantity();
+
+        for ( Consumption c: consumptionList) {
+            if (c.getAvailableQty() <= 0) { continue; }
+
+            int toUse = (c.getAvailableQty() < toAlloc ? c.getAvailableQty(): toAlloc);
+            allocList.add(new Alloc(t.getId(), c.getId(), toUse));
+            c.setAllocatedQty(c.getAllocatedQty() + toUse);
+            c.setAvailableQty(c.getAvailableQty() - toUse);
+            toAlloc -= toUse;
+
+            if (toAlloc == 0) { break; }
+        }
+
+        return allocList;
+    }
+
     public void generateAlloc(String dashDate) {
         // generate alloc data
         List<Alloc> allocList = new ArrayList<Alloc>();
 
         // load consumption data
         List<Consumption> consumptionsData = loadConsumption();
+        HashMap<String, List<Consumption>> consumptionHashMap = new HashMap<String, List<Consumption>>();
+
+        consumptionsData.forEach(c -> {
+            if (!consumptionHashMap.containsKey(c.getTicker())) {
+                consumptionHashMap.put(c.getTicker(), new ArrayList<Consumption>());
+            }
+            consumptionHashMap.get(c.getTicker()).add(Consumption.newInstance(c));
+        });
+
         System.out.println("consumptionsData: " + consumptionsData);
 
         // load sell trades for today's date
@@ -131,56 +168,16 @@ public class HelloMessageService {
         List<Trade> tradeList = tradeRepository.findSellTradesForDate(dashDate);
         tradeList.forEach(td -> {
             System.out.println("sell entry: "+ td);
-            //this sell needs to be allocated
-            // what we have -- quantity to allocate
-            // find available quantity from consumption data
-            int qtyToAllocate = td.getQuantity();
-            int allocatedQty = 0;
-            for(Consumption c: consumptionsData) {
-                if(c.getTicker().equals(td.getTicker()) && c.getAvailableQty() > 0) {
-                    if(c.getAvailableQty() >= qtyToAllocate) {
-
-                        allocatedQty += qtyToAllocate;
-
-                        Alloc a = new Alloc();
-                        a.setAllocatedQty(qtyToAllocate);
-                        a.setBuyTradeId(c.getId());
-                        a.setSellTradeId(td.getId());
-
-                        allocList.add(a);
-
-                        c.setAllocatedQty(qtyToAllocate);
-                        c.setAvailableQty(c.getOriginalQty() - qtyToAllocate);
-
-                    } else if(c.getAvailableQty() < qtyToAllocate) {
-
-                        allocatedQty += c.getAvailableQty();
-                        qtyToAllocate = qtyToAllocate - c.getAvailableQty();
-
-                        Alloc a = new Alloc();
-                        a.setAllocatedQty(c.getAvailableQty());
-                        a.setBuyTradeId(c.getId());
-                        a.setSellTradeId(td.getId());
-
-                        allocList.add(a);
-
-                        c.setAllocatedQty(c.getAvailableQty());
-                        c.setAvailableQty(c.getOriginalQty() - c.getAvailableQty());
-                    }
-                }
-                if(qtyToAllocate == 0) {
-                    break;
-                }
-            };
+            allocList.addAll(consumeSell(td.getTicker(), td, consumptionHashMap));
         });
 
-        allocList.forEach(allist -> {
-            System.out.println("saving alloc record: "+allist);
-            allocRepository.save(allist);
-        });
-
+        for (Alloc a: allocList) {
+            System.out.println("saving alloc record: " + a);
+            allocRepository.save(a);
+        }
 
     }
+
     //Trades file
     public void loadTrades(String csvFile) throws IOException {
         Map<String, Double> tradeMap = new ConcurrentHashMap<String, Double>();
