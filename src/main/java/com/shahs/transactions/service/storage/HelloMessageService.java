@@ -204,7 +204,9 @@ public class HelloMessageService {
             String[] arr = line1.replace("\"","")
                             .replace("$","")
                             .split(",");
-            if(!(arr[1].equals("Buy") || arr[1].equals("Sell") || arr[1].equals("Sell Short"))){
+
+            arr[1] = arr[1].equals("Sell Short") ? "Sell" : arr[1];
+            if(!(arr[1].equals("Buy") || arr[1].equals("Sell"))){
                 continue;
             }
             System.out.println("Line1: "+ line1);
