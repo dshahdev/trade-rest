@@ -5,7 +5,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-public class Consumption {
+public class Consumption implements Comparable{
 
     private long id;
     private String ticker;
@@ -45,19 +45,24 @@ public class Consumption {
     public int getAllocatedQty() {
         return allocatedQty;
     }
+    public void setAllocatedQty(int allocatedQty) {
+        this.allocatedQty = allocatedQty;
+    }
 
     @Column(name="available_qty", nullable = false)
     public int getAvailableQty() {
         return availableQty;
     }
-
     public void setAvailableQty(int availableQty) {
         this.availableQty = availableQty;
     }
 
-    public void setAllocatedQty(int allocatedQty) {
-        this.allocatedQty = allocatedQty;
+    @Override
+    public int compareTo(Object o) {
+        long buyId = ((Consumption)o).getId();
+        return (this.getId() == buyId ? 0 : (this.getId() < buyId ? -1 : 1));
     }
+
     @Override
     public String toString() {
         String c = " id: "+ this.getId()
@@ -70,4 +75,14 @@ public class Consumption {
         return c;
     }
 
+    public static Consumption newInstance(Consumption c) {
+        Consumption cNew = new Consumption();
+        cNew.setId(c.getId());
+        cNew.setTicker(c.getTicker());
+        cNew.setAllocatedQty(c.getAllocatedQty());
+        cNew.setAvailableQty(c.getAvailableQty());
+        cNew.setOriginalQty(c.getOriginalQty());
+
+        return cNew;
+    }
 }
