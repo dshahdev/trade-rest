@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface TradeRepository extends JpaRepository<Trade, Long> {
-    @Query(value = "SELECT t FROM Trade t WHERE t.action = 'Sell' and t.date = Date(:date)")
-    List<Trade> findSellTradesForDate(@Param("date") String date);
+    @Query(value = "SELECT t FROM Trade t WHERE t.action = :action and t.date = Date(:date)")
+    List<Trade> findTradesForDateByAction(@Param("date") String date, @Param("action") String action);
 
 }

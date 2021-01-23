@@ -1,10 +1,7 @@
 package com.shahs.transactions.service.storage;
 
 import com.shahs.transactions.model.*;
-import com.shahs.transactions.repository.AllocRepository;
-import com.shahs.transactions.repository.ConsumptionRepository;
-import com.shahs.transactions.repository.ParameterRepository;
-import com.shahs.transactions.repository.TradeRepository;
+import com.shahs.transactions.repository.*;
 import com.shahs.transactions.util.MiscUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,10 +27,10 @@ public class HelloMessageService {
     TradeRepository tradeRepository;
 
     @Autowired
-    ParameterRepository parameterRepository;
+    PositionRepository positionRepository;
 
     @Autowired
-    ConsumptionRepository consumptionRepository;
+    ParameterRepository parameterRepository;
 
     @Autowired
     AllocRepository allocRepository;
@@ -80,20 +77,12 @@ public class HelloMessageService {
         return  true;
 
     }
-    public List<Consumption> loadConsumption() {
-        List<Consumption> consumption = new ArrayList<Consumption>();;
-        consumptionRepository.findAllConsumptionData().forEach(c -> {
-            System.out.println("consumption: "+ c.toString());
-            consumption.add(c);
-        });
-
-        return consumption;
-    }
 
     public void printCsvFile(String inputPath, String csvFile) throws IOException{
         Date runDate = MiscUtils.stringToDate(csvFile.substring(10,18), DATE_FORMAT_YMD_NO_SLASH);
         String dashDate = csvFile.substring(10,14) +  "-" + csvFile.substring(14,16) + "-" + csvFile.substring(16,18);
-//        java.util.Date dashDate = MiscUtils.stringToDate(csvFile.substring(10,18), DATE_FORMAT_YMD_W_DASH);
+        String noDashDate = csvFile.substring(10,18);
+
         System.out.println(csvFile.substring(10,18));
         // load parameters so we have parameter last date
         LoadParameters();
@@ -106,9 +95,8 @@ public class HelloMessageService {
 
         // load trades here i.e. calculate ...
         loadTrades(inputPath + csvFile);
-//        loadTrades(csvFile);
 
-        generateAlloc(dashDate);
+        generateAlloc(dashDate, runDate);
 
         // save the date that was just run
         sysParams.setLastDateStr(MiscUtils.dateToString(runDate,DATE_FORMAT_MDY));
@@ -117,27 +105,27 @@ public class HelloMessageService {
 
     }
 
-    public List<Alloc> consumeSell(String ticker, Trade t, HashMap<String, List<Consumption>> consumptionHashMap) {
+    public List<Alloc> consumeSell(String ticker, Trade t, HashMap<String, List<Position>> positionHashMap) {
 
         List<Alloc> allocList = new ArrayList<Alloc>();
 
-        if (!consumptionHashMap.containsKey(ticker)) {
-            System.out.println("No buy trades available to consume trade for ticker " + ticker + " trade: " + t.toString());
+        if (!positionHashMap.containsKey(ticker)) {
+            System.out.println("No positions available for ticker " + ticker + " trade: " + t.toString());
             return allocList;
         }
 
-        List<Consumption> consumptionList = consumptionHashMap.get(ticker);
-        Collections.sort(consumptionList);
+        List<Position> positionList = positionHashMap.get(ticker);
+        Collections.sort(positionList);
 
         int toAlloc = t.getQuantity();
 
-        for ( Consumption c: consumptionList) {
-            if (c.getAvailableQty() <= 0) { continue; }
+        for ( Position p: positionList) {
+            if (p.getAvailableQty() <= 0) { continue; }
 
-            int toUse = (c.getAvailableQty() < toAlloc ? c.getAvailableQty(): toAlloc);
-            allocList.add(new Alloc(t.getId(), c.getId(), toUse));
-            c.setAllocatedQty(c.getAllocatedQty() + toUse);
-            c.setAvailableQty(c.getAvailableQty() - toUse);
+            int toUse = (p.getAvailableQty() < toAlloc ? p.getAvailableQty(): toAlloc);
+            allocList.add(new Alloc(t.getId(), p.getBuyId(), toUse));
+            p.setAllocatedQty(p.getAllocatedQty() + toUse);
+            p.setAvailableQty(p.getAvailableQty() - toUse);
             toAlloc -= toUse;
 
             if (toAlloc == 0) { break; }
@@ -146,34 +134,52 @@ public class HelloMessageService {
         return allocList;
     }
 
-    public void generateAlloc(String dashDate) {
-        // generate alloc data
-        List<Alloc> allocList = new ArrayList<Alloc>();
+    public void generateAlloc(String dashDate, Date dateDate) {
 
-        // load consumption data
-        List<Consumption> consumptionsData = loadConsumption();
-        HashMap<String, List<Consumption>> consumptionHashMap = new HashMap<String, List<Consumption>>();
+        // get Yesterday's EOD positions (SOD positions for today)
+        List<Position> yesterdaysPositions = positionRepository.findSODPositionsForDate(dashDate);
 
-        consumptionsData.forEach(c -> {
-            if (!consumptionHashMap.containsKey(c.getTicker())) {
-                consumptionHashMap.put(c.getTicker(), new ArrayList<Consumption>());
-            }
-            consumptionHashMap.get(c.getTicker()).add(Consumption.newInstance(c));
+        // add Buy Positions to current Positions for yesterday
+        List<Trade> tradeList = tradeRepository.findTradesForDateByAction(dashDate, "Buy");
+
+        // create new positions to be saved today; combine yesterday's eod positions plus today's buy positions
+        List<Position> todaysPositions = new ArrayList<Position>();
+        yesterdaysPositions.forEach( p -> { todaysPositions.add(Position.newInstance(p, dateDate)); });
+
+        tradeList.forEach( t -> {
+            todaysPositions.add(new Position(t.getId(), dateDate, t.getTicker(), t.getQuantity(), t.getQuantity(), 0));
         });
 
-        System.out.println("consumptionsData: " + consumptionsData);
+        // alloc Sell positions to current positions that are updated with today's buys
+        // save positions and alloc records
+        HashMap<String, List<Position>> positionHashMap = new HashMap<String, List<Position>>();
+
+        todaysPositions.forEach(p -> {
+            if (!positionHashMap.containsKey(p.getTicker())) {
+                positionHashMap.put(p.getTicker(), new ArrayList<Position>());
+            }
+            positionHashMap.get(p.getTicker()).add(p);
+        });
+
+        System.out.println("today's Positions: " + todaysPositions);
+
+        List<Alloc> allocList = new ArrayList<Alloc>();
 
         // load sell trades for today's date
-
-        List<Trade> tradeList = tradeRepository.findSellTradesForDate(dashDate);
-        tradeList.forEach(td -> {
+        List<Trade> sellTrades = tradeRepository.findTradesForDateByAction(dashDate, "Sell");
+        sellTrades.forEach(td -> {
             System.out.println("sell entry: "+ td);
-            allocList.addAll(consumeSell(td.getTicker(), td, consumptionHashMap));
+            allocList.addAll(consumeSell(td.getTicker(), td, positionHashMap));
         });
 
         for (Alloc a: allocList) {
-            System.out.println("saving alloc record: " + a);
+            System.out.println("saving alloc: " + a);
             allocRepository.save(a);
+        }
+
+        for (Position p: todaysPositions) {
+            System.out.println("saving position: " + p);
+            positionRepository.save(p);
         }
 
     }
