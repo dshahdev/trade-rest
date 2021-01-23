@@ -179,7 +179,9 @@ public class HelloMessageService {
 
         for (Position p: todaysPositions) {
             System.out.println("saving position: " + p);
-            positionRepository.save(p);
+            if (p.getAvailableQty() > 0) {
+                positionRepository.save(p);
+            }
         }
 
     }
