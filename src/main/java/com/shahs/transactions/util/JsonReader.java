@@ -36,6 +36,16 @@ public class JsonReader {
         }
     }
 
+    public static String readStringFromUrl(String url) throws IOException, JSONException {
+        InputStream is = new URL(url).openStream();
+        try {
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            return readAll(rd);
+        } finally {
+            is.close();
+        }
+    }
+
     public static void showJSON(JSONObject jsonObj) {
         jsonObj.keySet().forEach(keyStr ->
         {
@@ -50,9 +60,9 @@ public class JsonReader {
 //        System.out.println(json.toString());
 //        showJSON(json);
 
-        String json = readJsonFromUrl("https://query1.finance.yahoo.com/v7/finance/chart/AAPL?range=1y&interval=1d&indicators=quote&includeTimestamps=true").get("chart").toString();
+        String json = readJsonFromUrl("https://query1.finance.yahoo.com/v7/finance/chart/AAPL?range=1y&interval=1d&indicators=quote&includeTimestamps=true").toString();
         Gson gson = new Gson();
         YahooPrice price = gson.fromJson(json, YahooPrice.class);
-        System.out.println(price.getResult().get(0).getIndicators().getAdjclose().get(0));
+        System.out.println(price.getChart().getResult().get(0).getIndicators().getAdjclose().get(0));
     }
 }

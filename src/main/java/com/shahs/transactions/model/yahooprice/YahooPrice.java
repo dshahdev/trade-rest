@@ -5,22 +5,9 @@ import org.json.JSONObject;
 import java.util.List;
 
 public class YahooPrice {
-    private List<PriceData> result;
-    private JSONObject error;
+    private PriceChart chart;
 
-    public List<PriceData> getResult() {
-        return result;
-    }
+    public PriceChart getChart() { return chart; }
+    public void setChart(PriceChart chart) { this.chart = chart; }
 
-    public void setResult(List<PriceData> result) {
-        this.result = result;
-    }
-
-    public JSONObject getError() {
-        return error;
-    }
-
-    public void setError(JSONObject error) {
-        this.error = error;
-    }
 }

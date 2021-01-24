@@ -14,6 +14,8 @@ public interface StrdataRepository extends JpaRepository<Strdata, String> {
     @Query(value = "SELECT distinct concat(MONTHNAME(date), ' ', YEAR(date)) as strdata from trade union all select 'all' as strdata", nativeQuery = true)
     List<Strdata> getAllMonths();
 
+    @Query(value = "SELECT distinct ticker as strdata from trade", nativeQuery = true)
+    List<Strdata> getAllTickers();
 
 }
 

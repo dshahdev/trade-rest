@@ -6,6 +6,7 @@ import com.shahs.transactions.model.Strdata;
 import com.shahs.transactions.repository.MonthSummaryRepository;
 import com.shahs.transactions.repository.PNLDateRepository;
 import com.shahs.transactions.repository.StrdataRepository;
+import com.shahs.transactions.service.storage.PriceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,9 @@ public class MonthSummaryController {
     @Autowired
     private StrdataRepository strdataRepository;
 
+    @Autowired
+    private PriceService priceService;
+
     @GetMapping("/monthlySummary")
     public List<PNLMonthSummary> getAllMonthSummary() {
         return monthSummaryRepository.getAllMonthSummary();
@@ -43,7 +47,9 @@ public class MonthSummaryController {
     @GetMapping("/monthlyPnlList")
     public List<PNLMonthSummary> getMonthlyPnl() { return monthSummaryRepository.getPnlMonthlySummary();}
 
-
     @GetMapping("/pnlForAllDates")
     public List<PNLDateSummary> getPnlForAllMonths() { return pnlDateRepository.getPnlForAllDates();}
+
+    @GetMapping("/savePrices")
+    public boolean savePrices() { return priceService.savePrices();}
 }
