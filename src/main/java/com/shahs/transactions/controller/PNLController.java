@@ -3,9 +3,11 @@ package com.shahs.transactions.controller;
 import com.shahs.transactions.model.PNLDateSummary;
 import com.shahs.transactions.model.PNLTickerSummary;
 import com.shahs.transactions.model.Pnl;
+import com.shahs.transactions.model.PositionView;
 import com.shahs.transactions.repository.PNLDateRepository;
 import com.shahs.transactions.repository.PNLRepository;
 import com.shahs.transactions.repository.PNLTickerRepository;
+import com.shahs.transactions.repository.PositionViewRepository;
 import com.shahs.transactions.util.MiscUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +31,7 @@ public class PNLController {
     @Autowired private PNLRepository pnlRepository;
     @Autowired private PNLDateRepository pnlDateRepository;
     @Autowired private PNLTickerRepository pnlTickerRepository;
+    @Autowired private PositionViewRepository positionViewRepository;
 
     @GetMapping("/pnl")
     public List<Pnl> getAllPnl() {
@@ -61,6 +64,9 @@ public class PNLController {
         System.out.println("in find all pnl by Ticker ");
         return pnlTickerRepository.findPnlByTicker();
     }
+
+
+
     // pnlForDateByTicker -- will give data for one date -- grouped by ticker and sum of pnl
 
     @PostMapping("/pnlForDateByTicker")
@@ -69,6 +75,7 @@ public class PNLController {
         return pnlTickerRepository.findPnlForDateByTicker(MiscUtils.stringToDate(date, DATE_FORMAT_YMD_NO_SLASH));
     }
     // pnlForTickerByDate -- will give data for one Ticker -- grouped by date and sum of pnl
+
 
     @PostMapping("/pnlForTickerByDate")
     public List<PNLDateSummary>findPnlForTickerByDate(@Valid @RequestBody String ticker) {
@@ -88,8 +95,14 @@ public class PNLController {
         return pnlDateRepository.findPnlForMonthByDate(monthstr);
     }
 
+    @PostMapping("/positionsForDate")
+    public List<PositionView>getPositionsForDate(@Valid @RequestBody String positionDate) {
+        System.out.println("in find all pnl for Month  by date " + positionDate);
+        return positionViewRepository.getPositionsForDate(positionDate);
+    }
 
 
 
 
 }
+
