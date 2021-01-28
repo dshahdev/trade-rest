@@ -6,7 +6,7 @@ import java.util.List;
 
 public class PriceData {
     private JSONObject meta;
-    private List<Long> timestamp;
+    private List<String> timestamp;
     private PriceIndicators indicators;
 
     public JSONObject getMeta() {
@@ -17,11 +17,11 @@ public class PriceData {
         this.meta = meta;
     }
 
-    public List<Long> getTimestamp() {
+    public List<String> getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(List<Long> timestamp) {
+    public void setTimestamp(List<String> timestamp) {
         this.timestamp = timestamp;
     }
 

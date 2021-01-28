@@ -4,13 +4,13 @@ import java.util.List;
 
 public class PriceAdjClose {
 
-    private List<Double> adjclose;
+    private List<String> adjclose;
 
-    public List<Double> getAdjclose() {
+    public List<String> getAdjclose() {
         return adjclose;
     }
 
-    public void setAdjclose(List<Double> adjclose) {
+    public void setAdjclose(List<String> adjclose) {
         this.adjclose = adjclose;
     }
 }
