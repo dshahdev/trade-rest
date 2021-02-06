@@ -1,6 +1,7 @@
 package com.shahs.transactions.controller;
 
 import com.shahs.transactions.TransactionsApplication;
+import com.shahs.transactions.repository.TradeDao;
 import com.shahs.transactions.service.storage.DocumentStorageService;
 import com.shahs.transactions.service.storage.HelloMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,15 @@ public class FileController {
 
     @Autowired
     private HelloMessageService helloMessageService;
+
+    @Autowired
+    TradeDao tradeDao;
+
+    @GetMapping("/testdb")
+    public boolean testdb() {
+        tradeDao.test();
+        return true;
+    }
 
     @PostMapping("/uploadCSVFile")
     public Map<String, Boolean>  uploadFile(@Valid @RequestBody MultipartFile file) {
