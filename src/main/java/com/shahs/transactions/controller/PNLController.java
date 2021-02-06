@@ -30,6 +30,12 @@ public class PNLController {
     @Autowired private PNLTickerRepository pnlTickerRepository;
     @Autowired private PositionViewRepository positionViewRepository;
     @Autowired private DailyPositionSummViewRepository dailyPositionSummViewRepository;
+    @Autowired private PortfolioReturnRepository portfolioReturnRepository;
+
+    @GetMapping("/portfoliodailyreturn")
+    public List<PortfolioReturn> getAllPortfolioReturn() {
+        return portfolioReturnRepository.getAll();
+    }
 
     @GetMapping("/pnl")
     public List<Pnl> getAllPnl() {
