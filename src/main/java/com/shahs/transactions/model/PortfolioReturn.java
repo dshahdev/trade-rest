@@ -17,15 +17,9 @@ public class PortfolioReturn {
     private double sodMv;
     private double sodInv;
     private double realized;
+    private double cumuRealizedPnl;
+    private double cumuUnrealizedPnl;
 
-    @Column(name="position_date", nullable = false)
-    public Date getPositionDate() {
-        return positionDate;
-    }
-
-    public void setDate(Date positionDate) {
-        this.positionDate = positionDate;
-    }
 
     @Column(name="eod_mv", nullable = false)
     public double getEodMv() {
@@ -79,5 +73,32 @@ public class PortfolioReturn {
 
     public void setRealized(double realized) {
         this.realized = realized;
+    }
+
+    @Column(name="position_date", nullable = false)
+    public Date getPositionDate() {
+        return positionDate;
+    }
+
+    public void setPositionDate(Date positionDate) {
+        this.positionDate = positionDate;
+    }
+
+    @Column(name="cumu_realized_pnl", nullable = false)
+    public double getCumuRealizedPnl() {
+        return cumuRealizedPnl;
+    }
+
+    public void setCumuRealizedPnl(double cumuRealizedPnl) {
+        this.cumuRealizedPnl = cumuRealizedPnl;
+    }
+
+    @Column(name="cumu_unrealized_pnl", nullable = false)
+    public double getCumuUnrealizedPnl() {
+        return cumuUnrealizedPnl;
+    }
+
+    public void setCumuUnrealizedPnl(double cumuUnrealizedPnl) {
+        this.cumuUnrealizedPnl = cumuUnrealizedPnl;
     }
 }
