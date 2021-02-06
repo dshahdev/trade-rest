@@ -10,14 +10,18 @@ public class PositionView {
     private Date positionDate;
     @Id
     private String ticker;
-    private int qty;
-    private double pnl;
-    private double pnl_p;
-    private double cost;
-    private double price;
-    private double value;
 
-    public PositionView() {}
+    private int qty;
+    private double cost;
+    private double curPx;
+    private double priorPx;
+    private double inv;
+    private double value;
+    private double prior;
+    private double unrPnl;
+    private double dodPnl;
+    private double returnP;
+    private double dailyP;
 
     @Column(name="position_date", nullable = false)
     public Date getPositionDate() {
@@ -27,6 +31,7 @@ public class PositionView {
     public void setPositionDate(Date positionDate) {
         this.positionDate = positionDate;
     }
+
     @Column(name="ticker", nullable = false)
     public String getTicker() {
         return ticker;
@@ -41,25 +46,8 @@ public class PositionView {
         return qty;
     }
 
-    public void setQty(int originalQty) {
-        this.qty = originalQty;
-    }
-
-    @Column(name="pnl", nullable = false)
-    public double getPnl() {
-        return pnl;
-    }
-
-    public void setPnl(double pnl) {
-        this.pnl = pnl;
-    }
-    @Column(name="pnl_p", nullable = false)
-    public double getPnl_p() {
-        return pnl_p;
-    }
-
-    public void setPnl_p(double pnl_p) {
-        this.pnl_p = pnl_p;
+    public void setQty(int qty) {
+        this.qty = qty;
     }
 
     @Column(name="cost", nullable = false)
@@ -71,13 +59,31 @@ public class PositionView {
         this.cost = cost;
     }
 
-    @Column(name="price", nullable = false)
-    public double getPrice() {
-        return price;
+    @Column(name="cur_px", nullable = false)
+    public double getCurPx() {
+        return curPx;
     }
 
-    public void setPrice(double price) {
-        this.price = price;
+    public void setCurPx(double curPx) {
+        this.curPx = curPx;
+    }
+
+    @Column(name="prior_px", nullable = false)
+    public double getPriorPx() {
+        return priorPx;
+    }
+
+    public void setPriorPx(double priorPx) {
+        this.priorPx = priorPx;
+    }
+
+    @Column(name="inv", nullable = false)
+    public double getInv() {
+        return inv;
+    }
+
+    public void setInv(double inv) {
+        this.inv = inv;
     }
 
     @Column(name="value", nullable = false)
@@ -87,6 +93,51 @@ public class PositionView {
 
     public void setValue(double value) {
         this.value = value;
+    }
+
+    @Column(name="prior", nullable = false)
+    public double getPrior() {
+        return prior;
+    }
+
+    public void setPrior(double prior) {
+        this.prior = prior;
+    }
+
+    @Column(name="unr_pnl", nullable = false)
+    public double getUnrPnl() {
+        return unrPnl;
+    }
+
+    public void setUnrPnl(double unrPnl) {
+        this.unrPnl = unrPnl;
+    }
+
+    @Column(name="dod_pnl", nullable = false)
+    public double getDodPnl() {
+        return dodPnl;
+    }
+
+    public void setDodPnl(double dodPnl) {
+        this.dodPnl = dodPnl;
+    }
+
+    @Column(name="returnp", nullable = false)
+    public double getReturnP() {
+        return returnP;
+    }
+
+    public void setReturnP(double returnP) {
+        this.returnP = returnP;
+    }
+
+    @Column(name="dailyp", nullable = false)
+    public double getDailyP() {
+        return dailyP;
+    }
+
+    public void setDailyP(double dailyP) {
+        this.dailyP = dailyP;
     }
 }
 

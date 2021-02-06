@@ -45,5 +45,12 @@ public class MonthSummaryController {
 
 
     @GetMapping("/pnlForAllDates")
-    public List<PNLDateSummary> getPnlForAllMonths() { return pnlDateRepository.getPnlForAllDates();}
+    public List<PNLDateSummary> getPnlForAllMonths() {
+        try {
+            Thread.sleep(30000L);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return pnlDateRepository.getPnlForAllDates();}
+
 }

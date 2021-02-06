@@ -23,7 +23,7 @@ public class TradeDao {
                 ") ON DUPLICATE KEY UPDATE close = " + p.getClose() + ", open = " + p.getOpen() + " , volume=" + p.getVolume();
 
         tradeJdbcTmpl.update(query);
-//        tradeJdbcTmpl.update("COMMIT;");
 
     }
+
 }
