@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -31,10 +31,18 @@ public class PNLController {
     @Autowired private PositionViewRepository positionViewRepository;
     @Autowired private DailyPositionSummViewRepository dailyPositionSummViewRepository;
     @Autowired private PortfolioReturnRepository portfolioReturnRepository;
+    @Autowired private PositionForDateByTickerRepo positionForDateByTickerRepo;
+
 
     @GetMapping("/portfoliodailyreturn")
     public List<PortfolioReturn> getAllPortfolioReturn() {
         return portfolioReturnRepository.getAll();
+    }
+
+
+    @PostMapping("/portfoliodailyreturnformonth")
+    public List<PortfolioReturn> getPortfolioDailyReturnForMonth(@Valid @RequestBody String monthstr){
+        return portfolioReturnRepository.findPortfolioDailyReturnForMonth(monthstr);
     }
 
     @GetMapping("/pnl")
@@ -52,6 +60,11 @@ public class PNLController {
     @PostMapping("/pnlForTicker")
     public List<Pnl> getPnlForTicker(@Valid @RequestBody String ticker) {
         return pnlRepository.findPnlForTicker(ticker);
+    }
+
+    @PostMapping("/positionForDateByTicker")
+    public List<PositionForDateByTicker> getPositionForDateByTicker(@Valid @RequestBody String date) {
+        return positionForDateByTickerRepo.getPotionForDateByTicker(date);
     }
 
     // to do
@@ -129,8 +142,8 @@ public class PNLController {
 
     @PostMapping("/pnlForDateByTicker")
     public List<PNLTickerSummary>findPnlForDateByTicker(@Valid @RequestBody String date) {
-        System.out.println("in find all pnl for date  by ticker ");
-        return pnlTickerRepository.findPnlForDateByTicker(MiscUtils.stringToDate(date, DATE_FORMAT_YMD_NO_SLASH));
+        System.out.println("in find all pnl for date  by ticker "+ date);
+        return pnlTickerRepository.findPnlForDateByTicker(MiscUtils.stringToSqlDate(date, DATE_FORMAT_YMD_NO_SLASH));
     }
     // pnlForTickerByDate -- will give data for one Ticker -- grouped by date and sum of pnl
 

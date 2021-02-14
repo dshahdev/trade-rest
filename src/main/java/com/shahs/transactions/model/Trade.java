@@ -4,7 +4,7 @@ import com.shahs.transactions.util.MiscUtils;
 import org.hibernate.annotations.Columns;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.sql.Date;
 
 @Entity
 @Table(name="trade")
@@ -125,7 +125,7 @@ public class Trade {
 
         Trade newTrade = new Trade();
 
-        Date cDate = MiscUtils.stringToDate(csvFile[0],"MM/dd/yyyy");
+        Date cDate = MiscUtils.stringToSqlDate(csvFile[0],"MM/dd/yyyy");
         newTrade.setDate(cDate);
         newTrade.setAction(csvFile[1]);
         newTrade.setTicker(csvFile[2]);

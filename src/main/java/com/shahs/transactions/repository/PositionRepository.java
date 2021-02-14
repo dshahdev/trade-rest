@@ -13,7 +13,7 @@ public interface PositionRepository extends JpaRepository<Position, Long> {
     @Query(value = "SELECT p.* from position p  WHERE p.position_date = date(:positionDate)", nativeQuery = true)
     public List<Position> findEODPositionsForDate(@Param("positionDate") String positionDate);
 
-    @Query(value = "SELECT p.* from position p  WHERE p.position_date  = (select max(pp.position_date) from position pp where pp.position_date < date(:positionDate))", nativeQuery = true)
+    @Query(value = "SELECT p.* from position p  WHERE p.position_date = (select previous_date from previous_date_view where date = date(:positionDate))", nativeQuery = true)
     public List<Position> findSODPositionsForDate(@Param("positionDate") String positionDate);
 
 }

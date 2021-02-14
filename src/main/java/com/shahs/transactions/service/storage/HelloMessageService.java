@@ -3,14 +3,20 @@ package com.shahs.transactions.service.storage;
 import com.shahs.transactions.model.*;
 import com.shahs.transactions.repository.*;
 import com.shahs.transactions.util.MiscUtils;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class HelloMessageService {
@@ -19,6 +25,36 @@ public class HelloMessageService {
     public static final String DATE_FORMAT_YMD= "yyyy/MM/dd";
     public static final String DATE_FORMAT_YMD_NO_SLASH = "yyyyMMdd";
     public static final String DATE_FORMAT_YMD_W_DASH = "yyyy-MM-dd";
+
+    public enum ConsumeMethod {
+        FIFO,
+        LIFO,
+        AVERAGE;
+    }
+
+    public enum StrategyEnum {
+        DAY_TRADE("DAY_TRADE"),
+        ONH("ONH"),
+        SIDE_BET("SIDE_BET"),
+        SWING("SWING"),
+        NONE("NONE");
+
+        private final String text;
+
+        StrategyEnum(final String text) {
+            this.text = text;
+        }
+
+        /* (non-Javadoc)
+         * @see java.lang.Enum#toString()
+         */
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+
+    public static ConsumeMethod costingMethod = ConsumeMethod.LIFO;
 
     String line = "";
     String splitBy=",";
@@ -34,6 +70,8 @@ public class HelloMessageService {
 
     @Autowired
     AllocRepository allocRepository;
+
+    @Autowired SwingAlertRepository swingAlertRepository;
 
     SystemParameters sysParams = null;
 
@@ -51,7 +89,13 @@ public class HelloMessageService {
             if (p.getParamKey().equals("lastDate")) {
                 System.out.println("loaded parmas: "+ p);
                 sysParams.setLastDateStr(p.getParamValue());
-                sysParams.setLastDate(MiscUtils.stringToDate(p.getParamValue(),DATE_FORMAT_MDY));
+                sysParams.setLastDate(MiscUtils.stringToSqlDate(p.getParamValue(),DATE_FORMAT_MDY));
+            } else if (p.getParamKey().startsWith("RenameTicker")) {
+                System.out.println("loaded params: " + p);
+                String[] arr = p.getParamValue().split("~");
+                if (arr.length >= 2) {
+                    sysParams.getRenamedTickerMap().put(arr[0], arr[1]);
+                }
             }
         });
 
@@ -63,7 +107,8 @@ public class HelloMessageService {
         ps.setParamValue(sysParams.getLastDateStr());
         parameterRepository.save(ps);
     }
-    public boolean checkDate(Date date) {
+
+    public boolean checkDate(java.sql.Date date) {
 
         if (sysParams.getLastDateStr().equals("")) {    // this means nothing is loaded in sysParams variable
             sysParams.setLastDateStr(MiscUtils.dateToString(date,DATE_FORMAT_MDY));
@@ -79,7 +124,7 @@ public class HelloMessageService {
     }
 
     public void printCsvFile(String inputPath, String csvFile) throws IOException{
-        Date runDate = MiscUtils.stringToDate(csvFile.substring(10,18), DATE_FORMAT_YMD_NO_SLASH);
+        java.sql.Date runDate = MiscUtils.stringToSqlDate(csvFile.substring(10,18), DATE_FORMAT_YMD_NO_SLASH);
         String dashDate = csvFile.substring(10,14) +  "-" + csvFile.substring(14,16) + "-" + csvFile.substring(16,18);
         String noDashDate = csvFile.substring(10,18);
 
@@ -105,7 +150,10 @@ public class HelloMessageService {
 
     }
 
-    public List<Alloc> consumeSell(String ticker, Trade t, HashMap<String, List<Position>> positionHashMap) {
+    public List<Alloc> consumeSell(String ticker, Trade t, HashMap<String, List<Position>> positionHashMap,
+                                   ConsumeMethod method, HashMap<Long, Trade> openTradesMap, DateTime priorDate,
+                                   HashMap<String, List<SwingAlert>> swingAlertMap,
+                                   HashMap<Long, Trade> todaysBuyTradesMap) {
 
         List<Alloc> allocList = new ArrayList<Alloc>();
 
@@ -121,9 +169,23 @@ public class HelloMessageService {
 
         for ( Position p: positionList) {
             if (p.getAvailableQty() <= 0) { continue; }
+            if (p.getBuyId() > t.getId()) { continue; }
 
             int toUse = (p.getAvailableQty() < toAlloc ? p.getAvailableQty(): toAlloc);
-            allocList.add(new Alloc(t.getId(), p.getBuyId(), toUse));
+
+            StrategyEnum strategy = StrategyEnum.NONE;
+
+            boolean isTodaysBuyTrade = todaysBuyTradesMap.containsKey(p.getBuyId());
+            boolean isSODPositionTrade = openTradesMap.containsKey(p.getBuyId());
+
+            Trade buyTrade = isSODPositionTrade ? openTradesMap.get(p.getBuyId()) : (isTodaysBuyTrade ? todaysBuyTradesMap.get(p.getBuyId()) : null);
+
+            boolean hasSwingAlert = swingAlertMap.containsKey(ticker);
+            boolean boughtPriorMarketDay = isSODPositionTrade && buyTrade.getDate().equals(priorDate.toDate()) && !hasSwingAlert;
+
+            strategy = isTodaysBuyTrade ? StrategyEnum.DAY_TRADE: (boughtPriorMarketDay ? StrategyEnum.ONH: (hasSwingAlert ? SwingAlert.TradeWithinSwingDates(swingAlertMap.get(ticker), buyTrade, t, 2): StrategyEnum.SIDE_BET));
+
+            allocList.add(new Alloc(t.getId(), p.getBuyId(), toUse, strategy.toString()));
             p.setAllocatedQty(p.getAllocatedQty() + toUse);
             p.setAvailableQty(p.getAvailableQty() - toUse);
             toAlloc -= toUse;
@@ -134,16 +196,33 @@ public class HelloMessageService {
         return allocList;
     }
 
-    public void generateAlloc(String dashDate, Date dateDate) {
+    public void generateAlloc(String dashDate, java.sql.Date dateDate) {
 
         // get Yesterday's EOD positions (SOD positions for today)
         List<Position> yesterdaysPositions = positionRepository.findSODPositionsForDate(dashDate);
+        List<Trade> openTradesForDate = tradeRepository.findBuyTradesForOpenPositions(dashDate);
+
+        List<SwingAlert> alertList = swingAlertRepository.getAllSwingAlerts();
+        HashMap<String, List<SwingAlert>> swingAlertMap = new HashMap<String, List<SwingAlert>>();
+        for (SwingAlert swingAlert : alertList) {
+            String key = swingAlert.getTicker();
+            if (!swingAlertMap.containsKey(key)) {
+                swingAlertMap.put(key, new ArrayList<SwingAlert>());
+            }
+            swingAlertMap.get(key).add(swingAlert);
+        }
 
         // add Buy Positions to current Positions for yesterday
         List<Trade> tradeList = tradeRepository.findTradesForDateByAction(dashDate, "Buy");
 
         // create new positions to be saved today; combine yesterday's eod positions plus today's buy positions
         List<Position> todaysPositions = new ArrayList<Position>();
+
+        DateTime priorDate = (new DateTime(dateDate)).minusDays(1);
+        if (yesterdaysPositions.size() >= 1) {
+            priorDate = new DateTime(yesterdaysPositions.get(0).getPositionDate());
+        }
+
         yesterdaysPositions.forEach( p -> { todaysPositions.add(Position.newInstance(p, dateDate)); });
 
         tradeList.forEach( t -> {
@@ -153,6 +232,12 @@ public class HelloMessageService {
         // alloc Sell positions to current positions that are updated with today's buys
         // save positions and alloc records
         HashMap<String, List<Position>> positionHashMap = new HashMap<String, List<Position>>();
+        HashMap<Long, Trade> openTradesMap = new HashMap<Long, Trade>();
+        HashMap<Long, Trade> todaysBuyTradesMap = new HashMap<Long, Trade>();
+
+        // need to keep SOD positions and today's buys in openTradesMap list
+        openTradesForDate.forEach( t -> openTradesMap.put(t.getId(), t));
+        tradeList.forEach(t -> todaysBuyTradesMap.put(t.getId(), t));
 
         todaysPositions.forEach(p -> {
             if (!positionHashMap.containsKey(p.getTicker())) {
@@ -167,9 +252,10 @@ public class HelloMessageService {
 
         // load sell trades for today's date
         List<Trade> sellTrades = tradeRepository.findTradesForDateByAction(dashDate, "Sell");
+        DateTime finalPriorDate = priorDate;
         sellTrades.forEach(td -> {
             System.out.println("sell entry: "+ td);
-            allocList.addAll(consumeSell(td.getTicker(), td, positionHashMap));
+            allocList.addAll(consumeSell(td.getTicker(), td, positionHashMap, ConsumeMethod.LIFO, openTradesMap, finalPriorDate, swingAlertMap, todaysBuyTradesMap));
         });
 
         for (Alloc a: allocList) {
@@ -212,6 +298,10 @@ public class HelloMessageService {
             System.out.println("Line1: "+ line1);
 
             current = Trade.createTradeObj(arr);
+            if (sysParams.getRenamedTickerMap().containsKey(current.getTicker())) {
+                // override ticker value to renamed ticker (renamed tickers are stored in the parameter table);
+                current.setTicker(sysParams.getRenamedTickerMap().get(current.getTicker()));
+            }
             if (prior == null) { prior = current; continue; }
 
             if (canMerge(current, prior)) {
@@ -235,20 +325,20 @@ public class HelloMessageService {
 
        }
 
-       public boolean canMerge(Trade current, Trade prior) {
-        if (current.getDate().equals(prior.getDate()) &&
-                current.getTicker().equals(prior.getTicker()) &&
-                current.getAction().equals(prior.getAction()) &&
-                Math.abs(current.getPrice() - prior.getPrice()) <= 0.25) {
-            return true;
-        }
-        return false;
-       }
+    public boolean canMerge(Trade current, Trade prior) {
+    if (current.getDate().equals(prior.getDate()) &&
+            current.getTicker().equals(prior.getTicker()) &&
+            current.getAction().equals(prior.getAction()) &&
+            Math.abs(current.getPrice() - prior.getPrice()) <= 0.25) {
+        return true;
+    }
+    return false;
+    }
 
-       public Trade mergeTrades(Trade current, Trade prior) {
-            prior.addSameLotTrade(current);
-            return prior;
-       }
+    public Trade mergeTrades(Trade current, Trade prior) {
+        prior.addSameLotTrade(current);
+        return prior;
+    }
 
 
 }

@@ -1,7 +1,7 @@
 package com.shahs.transactions.model;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.sql.Date;
 
 @Entity
 @IdClass(PositionViewCompositeKey.class)

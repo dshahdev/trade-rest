@@ -4,7 +4,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.util.Date;
+import java.sql.Date;
 
 public class MiscUtils {
 
@@ -16,10 +16,17 @@ public class MiscUtils {
         return counter;
     }
 
-    public static java.util.Date stringToDate(String date, String format) {    // format example "MM/dd/yyyy"
+    public static java.sql.Date stringToSqlDate(String date, String format) {    // format example "MM/dd/yyyy"
         DateTimeFormatter formatter = DateTimeFormat.forPattern(format);
         DateTime dt = formatter.parseDateTime(date);
-        return dt.toDate();
+        return new java.sql.Date(dt.getMillis());
+    }
+    public static java.sql.Date stringToDate(String date, String format) {    // format example "MM/dd/yyyy"
+        DateTimeFormatter formatter = DateTimeFormat.forPattern(format);
+        DateTime dt = formatter.parseDateTime(date);
+        return new java.sql.Date(dt.getMillis());
+
+
     }
     public static String dateToString(Date date, String format) {
         DateTime dt = new DateTime(date);

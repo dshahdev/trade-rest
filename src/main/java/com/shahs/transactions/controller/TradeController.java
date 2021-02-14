@@ -1,6 +1,6 @@
 package com.shahs.transactions.controller;
 
-import com.shahs.transactions.exception.ResourceNotFoundException;
+//import com.shahs.transactions.exception.ResourceNotFoundException;
 import com.shahs.transactions.model.Trade;
 import com.shahs.transactions.repository.TradeRepository;
 import com.shahs.transactions.service.storage.DocumentStorageService;
@@ -41,9 +41,9 @@ public class TradeController {
 
     @GetMapping("/trades/{id}")
     public ResponseEntity<Trade> getTradeById(@PathVariable(value = "id") Long tradeId)
-            throws ResourceNotFoundException {
+            throws Exception {
         Trade trade = tradeRepository.findById(tradeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Trade not found for this id :: " + tradeId));
+                .orElseThrow(() -> new Exception());
         return ResponseEntity.ok().body(trade);
     }
 
@@ -54,9 +54,9 @@ public class TradeController {
 
     @PutMapping("/trades/{id}")
     public ResponseEntity<Trade> updateTrade(@PathVariable(value = "id") Long tradeId,
-                                                   @Valid @RequestBody Trade tradeDetails) throws ResourceNotFoundException {
+                                                   @Valid @RequestBody Trade tradeDetails) throws Exception {
         Trade trade = tradeRepository.findById(tradeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found for this id :: " + tradeId));
+                .orElseThrow(() -> new Exception("Employee not found for this id :: " + tradeId));
 
         trade.setDate(tradeDetails.getDate());
         trade.setAction(tradeDetails.getAction());
@@ -73,9 +73,9 @@ public class TradeController {
 
     @DeleteMapping("/trades/{id}")
     public Map<String, Boolean> deleteTrade(@PathVariable(value = "id") Long tradeId)
-            throws ResourceNotFoundException {
+            throws Exception {
         Trade trade = tradeRepository.findById(tradeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Trade not found for this id :: " + tradeId));
+                .orElseThrow(() -> new Exception("Trade not found for this id :: " + tradeId));
 
         tradeRepository.delete(trade);
         Map<String, Boolean> response = new HashMap<>();

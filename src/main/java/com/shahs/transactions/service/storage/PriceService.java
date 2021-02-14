@@ -30,7 +30,7 @@ public class PriceService {
     private TradeDao tradeDao;
 
     public static final String DATE_FORMAT_YMD_W_DASH = "yyyy-MM-dd";
-    public static final String URL = "https://query1.finance.yahoo.com/v7/finance/chart/~TICKER~?range=1y&interval=1d&indicators=quote&includeTimestamps=true";
+    public static final String URL = "https://query1.finance.yahoo.com/v7/finance/chart/~TICKER~?range=1d&interval=1d&indicators=quote&includeTimestamps=true";
 
     public boolean savePrices() {
         // get all tickers from Trade, where price for current date is not available
@@ -66,7 +66,7 @@ public class PriceService {
                     Price p = new Price();
                     Long l =  Long.parseLong(priceResponse.getChart().getResult().get(0).getTimestamp().get(i)) * 1000L;
                     p.setTicker(e.getStrdata());
-                    p.setPriceDate(new java.util.Date(l));
+                    p.setPriceDate(new java.sql.Date(l));
 
                     String vol = priceResponse.getChart().getResult().get(0).getIndicators().getQuote().get(0).getVolume().get(i);
                     String close = priceResponse.getChart().getResult().get(0).getIndicators().getAdjclose().get(0).getAdjclose().get(i);

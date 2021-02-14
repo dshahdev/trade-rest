@@ -10,13 +10,15 @@ public class Alloc {
     private long sellTradeId;
     private long buyTradeId;
     private int allocatedQty;
+    private String strategy;
 
     public Alloc(){}
 
-    public Alloc(long sti, long bti, int allocatedQty) {
+    public Alloc(long sti, long bti, int allocatedQty, String strategy) {
         this.sellTradeId = sti;
         this.buyTradeId = bti;
         this.allocatedQty = allocatedQty;
+        this.strategy = strategy;
     }
 
     @Id
@@ -52,13 +54,23 @@ public class Alloc {
         this.allocatedQty = value;
     }
 
+    @Column(name="strategy", nullable = false)
+    public String getStrategy() {
+        return strategy;
+    }
+
+    public void setStrategy(String strategy) {
+        this.strategy = strategy;
+    }
+
     @Override
     public String toString() {
 
         String ac = "id: "+this.getId()
                     + "sellTradeId: " + this.getSellTradeId()
-                    + " buyTradeId:" + this.getBuyTradeId()
-                    + "allocatedQty" + this.getAllocatedQty();
+                    + " buyTradeId: " + this.getBuyTradeId()
+                    + "allocatedQty: " + this.getAllocatedQty()
+                    + "strategy: " + this.getStrategy();
 
         return ac;
     }

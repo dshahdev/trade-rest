@@ -1,14 +1,20 @@
 package com.shahs.transactions.model;
 
+import com.shahs.transactions.service.storage.HelloMessageService;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import javax.persistence.*;
 import java.io.Serializable;
-import java.util.Date;
+import java.sql.Date;
 
 
 @Entity
 @Table(name="position")
 @IdClass(PositionCompositeKey.class)
 public class Position implements Comparable {
+
+    @Autowired HelloMessageService helloMessageService;
+
     private long buyId;
     private Date positionDate;
     private String ticker;
@@ -73,8 +79,25 @@ public class Position implements Comparable {
 
     @Override
     public int compareTo(Object o) {
+
         long buyId = ((Position)o).getBuyId();
-        return (this.getBuyId() == buyId ? 0 : (this.getBuyId() < buyId ? -1 : 1));
+        int retValue = 0;
+
+        if (this.getBuyId() == buyId) { retValue = 0; }
+        if (this.getBuyId() < buyId) {
+            if (HelloMessageService.costingMethod == HelloMessageService.ConsumeMethod.LIFO) {
+                retValue = 1;
+            } else {
+                retValue = -1;
+            }
+        } else if (this.getBuyId() > buyId) {
+            if (HelloMessageService.costingMethod == HelloMessageService.ConsumeMethod.LIFO) {
+                retValue = -1;
+            } else {
+                retValue = 1;
+            }
+        }
+        return retValue;
     }
 
     public static Position newInstance(Position c, Date overrideDate) {

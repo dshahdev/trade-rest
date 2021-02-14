@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
+import java.sql.Date;
 import java.util.List;
 
 @Repository
@@ -15,11 +15,9 @@ public interface PNLRepository extends JpaRepository<Pnl, Long> {
     @Query(value = "SELECT p.* FROM pnl_view p WHERE p.date = date(:date)", nativeQuery = true)
     List<Pnl> findPnlForDate(@Param("date") String  date);
 
-
-
-
     @Query(value = "SELECT p.* FROM pnl_view p WHERE p.ticker = :ticker", nativeQuery = true)
     List<Pnl> findPnlForTicker(@Param("ticker") String ticker);
+
 
 
 

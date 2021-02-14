@@ -5,16 +5,16 @@ import java.io.Serializable;
 import java.sql.Date;
 
 @Embeddable
-public class PriceCompositeKey  implements Serializable {
-    private Date priceDate;
+public class PositionDateTickerCompositeKey implements Serializable {
+    private String positionDate;
     private String ticker;
 
-    public Date getPriceDate() {
-        return priceDate;
+    public String getPositionDate() {
+        return positionDate;
     }
 
-    public void setPriceDate(Date priceDate) {
-        this.priceDate = priceDate;
+    public void setPositionDate(String positionDate) {
+        this.positionDate = positionDate;
     }
 
     public String getTicker() {
